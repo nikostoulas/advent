@@ -1,0 +1,13 @@
+[workspace]
+members = ["aoc-client"]
+[package]
+name = "advent"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+time = "0.3.30"
+aoc-client = { path = "aoc-client" }
+
+[build-dependencies]
+aoc-auto = "0.1.0"

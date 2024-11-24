@@ -1,0 +1,9 @@
+[package]
+name = "aoc-client"
+version = "0.1.0"
+edition = "2021"
+authors = ["Nikos Kostoulas", "Alexander Öberg", "panicbit <panicbit.dev@gmail.com>"]
+
+[dependencies]
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+select = "0.5.0"

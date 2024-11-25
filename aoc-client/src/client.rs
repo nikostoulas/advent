@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
 
 use reqwest::header::COOKIE;
 

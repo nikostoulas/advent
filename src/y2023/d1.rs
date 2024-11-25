@@ -102,33 +102,35 @@ impl Input {
     }
 }
 
-pub struct FileInput {
-    lines: Vec<String>,
-}
-
-impl FileInput {
-    pub async fn create() -> Result<FileInput, Box<dyn Error>> {
-        let resp: String =
-            fs::read_to_string("./src/input.txt").expect("Should have been able to read the file");
-        let lines: Vec<String> = resp.split('\n').map(|s| s.to_string()).collect();
-        Ok(FileInput { lines })
-    }
-
-    pub fn sum(&self) -> u32 {
-        let mut sum = 0;
-        for line in self.lines.iter() {
-            sum += Input::create(line.to_string()).number();
-        }
-        sum
-    }
-}
-
 pub fn part1(input: String) -> String {
-    let input = Input::create(input);
-    input.number().to_string()
+    let lines: Vec<String> = input.split('\n').map(|s| s.to_string()).collect();
+    let mut sum = 0;
+    for line in lines.iter() {
+        sum += Input::create(line.to_string()).number();
+    }
+    sum.to_string()
 }
 
 pub fn part2(input: String) -> String {
-    let input = Input::create(input);
-    input.number().to_string()
+    let lines: Vec<String> = input.split('\n').map(|s| s.to_string()).collect();
+    let mut sum = 0;
+    for line in lines.iter() {
+        sum += Input::create(line.to_string()).number();
+    }
+    sum.to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_example() {
+        let str = "1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet";
+        let result = part1(str.to_string());
+        assert_eq!(result, "142");
+    }
 }

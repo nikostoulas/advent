@@ -6,4 +6,4 @@ authors = ["Nikos Kostoulas", "Alexander Öberg", "panicbit <panicbit.dev@gmail.
 
 [dependencies]
 reqwest = { version = "0.11", features = ["blocking", "json"] }
-select = "0.5.0"
+select = "0.6.0"

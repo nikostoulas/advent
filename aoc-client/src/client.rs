@@ -45,10 +45,8 @@ impl Client {
         if let Ok(input) = self.get_cached_input(solution_day) {
             return Ok(input);
         }
-
         let input = self.download_input(solution_day)?;
         self.cache_input(solution_day, &input)?;
-
         Ok(input)
     }
 
@@ -72,7 +70,6 @@ impl Client {
         let node = doc.find(Name("main")).next().unwrap();
         let text = node.text();
         let text = format!("{}.", text.trim());
-
         Ok(text)
     }
 
@@ -85,7 +82,6 @@ impl Client {
     fn session_token() -> Result<String, ClientError> {
         let folder_path = Self::root_folder()?.join("aoc-client/.session");
         let token = std::fs::read_to_string(folder_path)?.trim().to_string();
-
         Ok(token)
     }
 
@@ -99,22 +95,17 @@ impl Client {
     }
 
     fn get_cached_input(&self, solution_day: &SolutionDay) -> Result<String, ClientError> {
-        let path = self
-            .cache_dir
-            .join(format!("y{}/d{}.txt", solution_day.year, solution_day.day));
+        let path = format!("y{}/d{}.txt", solution_day.year, solution_day.day);
+        let path = self.cache_dir.join(path);
         Ok(std::fs::read_to_string(path)?)
     }
 
     fn cache_input(&self, solution_day: &SolutionDay, input: &str) -> Result<(), ClientError> {
         let SolutionDay { year, day, .. } = solution_day;
         let path = self.cache_dir.join(format!("y{}/d{}.txt", year, day));
-        // create the year folder if it doesn't exist
         fs::create_dir_all(path.parent().unwrap())?;
-
         let mut file = File::create(path)?;
-
         file.write_all(input.as_bytes())?;
-
         Ok(())
     }
 
@@ -124,7 +115,6 @@ impl Client {
         let cookie = format!("session={}", self.session_token);
         let input = self.client.get(&url).header(COOKIE, cookie).send()?;
         let input = input.error_for_status()?.text()?;
-
         Ok(input)
     }
 
@@ -132,7 +122,6 @@ impl Client {
         let cookie = format!("session={}", self.session_token);
         let req = self.client.post(url).header(COOKIE, cookie).form(&params);
         let response = req.send()?.error_for_status()?.text()?;
-
         Ok(response)
     }
 }

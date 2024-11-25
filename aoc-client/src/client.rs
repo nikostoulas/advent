@@ -5,6 +5,11 @@ use std::io::Write;
 
 use reqwest::header::COOKIE;
 
+use crate::SolutionDay;
+
+type ClientError = Box<dyn Error>;
+type Params<'a> = HashMap<&'a str, String>;
+
 /// Advent of Code client
 ///
 /// This client is used to get input from the Advent of Code website and to submit solutions.
@@ -28,56 +33,80 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self, ClientError> {
+        Ok(Self {
+            cache_dir: Self::cache_dir()?,
+            session_token: Self::session_token()?,
+            client: reqwest::blocking::Client::new(),
+        })
+    }
+
+    pub fn get_input(&self, solution_day: &SolutionDay) -> Result<String, ClientError> {
+        if let Ok(input) = self.get_cached_input(solution_day) {
+            return Ok(input);
+        }
+
+        let input = self.download_input(solution_day)?;
+        self.cache_input(solution_day, &input)?;
+
+        Ok(input)
+    }
+
+    pub fn submit_solution(
+        &self,
+        solution_day: &SolutionDay,
+        solution: &str,
+    ) -> Result<String, ClientError> {
+        use select::document::Document;
+        use select::predicate::Name;
+        let SolutionDay { year, day, part } = solution_day;
+
+        let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
+        let mut params = Params::new();
+        params.insert("level", part.to_string());
+        params.insert("answer", solution.into());
+
+        let response = self.post_request(&url, &params)?;
+
+        let doc = Document::from(response.as_str());
+        let node = doc.find(Name("main")).next().unwrap();
+        let text = node.text();
+        let text = format!("{}.", text.trim());
+
+        Ok(text)
+    }
+
+    fn cache_dir() -> Result<std::path::PathBuf, ClientError> {
+        let cache_dir = Self::root_folder()?.join(".data");
+        fs::create_dir_all(&cache_dir)?;
+        Ok(cache_dir)
+    }
+
+    fn session_token() -> Result<String, ClientError> {
+        let folder_path = Self::root_folder()?.join("aoc-client/.session");
+        let token = std::fs::read_to_string(folder_path)?.trim().to_string();
+
+        Ok(token)
+    }
+
+    fn root_folder() -> Result<std::path::PathBuf, ClientError> {
         let file = std::env::current_exe()?;
         let mut base = file.parent().unwrap().parent().unwrap().parent().unwrap();
         if base.to_str().unwrap().ends_with("target") {
             base = base.parent().unwrap();
         }
-        let mut folder_path = base.to_path_buf();
-        folder_path.push("aoc-client/.session");
-
-        println!("folder {:?}", folder_path);
-        let session_token = std::fs::read_to_string(folder_path)
-            .unwrap()
-            .trim()
-            .to_string();
-        let mut cache_dir = base.to_path_buf();
-        cache_dir.push(".data");
-
-        fs::create_dir_all(&cache_dir).map_err(|err| {
-            eprintln!(
-                "Failed to create cache dir \"{}\": {}",
-                cache_dir.display(),
-                err
-            );
-            err
-        })?;
-
-        Ok(Self {
-            cache_dir,
-            session_token,
-            client: reqwest::blocking::Client::new(),
-        })
+        Ok(base.to_path_buf())
     }
 
-    pub fn get_input(&self, year: u32, day: u32) -> Result<String, Box<dyn Error>> {
-        if let Ok(input) = self.get_cached_input(year, day) {
-            return Ok(input);
-        }
-
-        let input = self.download_input(year, day)?;
-        self.cache_input(year, day, &input)?;
-
-        Ok(input)
-    }
-
-    fn get_cached_input(&self, year: u32, day: u32) -> Result<String, Box<dyn Error>> {
-        let path = self.cache_dir.join(format!("y{}/d{}.txt", year, day));
+    fn get_cached_input(&self, solution_day: &SolutionDay) -> Result<String, ClientError> {
+        let path = self
+            .cache_dir
+            .join(format!("y{}/d{}.txt", solution_day.year, solution_day.day));
         Ok(std::fs::read_to_string(path)?)
     }
 
-    fn cache_input(&self, year: u32, day: u32, input: &str) -> Result<(), Box<dyn Error>> {
+    fn cache_input(&self, solution_day: &SolutionDay, input: &str) -> Result<(), ClientError> {
+        let SolutionDay { year, day, .. } = solution_day;
         let path = self.cache_dir.join(format!("y{}/d{}.txt", year, day));
         // create the year folder if it doesn't exist
         fs::create_dir_all(path.parent().unwrap())?;
@@ -89,53 +118,22 @@ impl Client {
         Ok(())
     }
 
-    fn download_input(&self, year: u32, day: u32) -> Result<String, Box<dyn Error>> {
+    fn download_input(&self, solution_day: &SolutionDay) -> Result<String, ClientError> {
+        let SolutionDay { year, day, .. } = solution_day;
         let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
         let cookie = format!("session={}", self.session_token);
-        let input = self
-            .client
-            .get(&url)
-            .header(COOKIE, cookie)
-            .send()?
-            .error_for_status()?
-            .text()?;
+        let input = self.client.get(&url).header(COOKIE, cookie).send()?;
+        let input = input.error_for_status()?.text()?;
 
         Ok(input)
     }
 
-    pub fn submit_solution(
-        &self,
-        year: u32,
-        day: u32,
-        part: u32,
-        solution: &str,
-    ) -> Result<String, Box<dyn Error>> {
-        use select::document::Document;
-        use select::predicate::Name;
-
-        let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
+    fn post_request(&self, url: &str, params: &Params) -> Result<String, ClientError> {
         let cookie = format!("session={}", self.session_token);
+        let req = self.client.post(url).header(COOKIE, cookie).form(&params);
+        let response = req.send()?.error_for_status()?.text()?;
 
-        let mut params = HashMap::new();
-        params.insert("level", part.to_string());
-        params.insert("answer", solution.into());
-
-        let response = self
-            .client
-            .post(&url)
-            .header(COOKIE, cookie)
-            .form(&params)
-            .send()?
-            .error_for_status()?
-            .text()?;
-
-        let doc = Document::from(response.as_str());
-        let node = doc.find(Name("main")).next().unwrap();
-        let text = node.text();
-        // let text = text.trim().split(".  ").next().unwrap_or("");
-        let text = format!("{}.", text.trim());
-
-        Ok(text)
+        Ok(response)
     }
 }
 
@@ -146,7 +144,12 @@ mod tests {
     #[test]
     fn test_get_input() {
         let client = Client::new().unwrap();
-        let result = client.get_input(2023, 6).unwrap();
+        let solution = SolutionDay {
+            year: 2023,
+            day: 6,
+            part: 1,
+        };
+        let result = client.get_input(&solution).unwrap();
         assert_eq!(
             result,
             "Time:        44     80     65     72\nDistance:   208   1581   1050   1102\n"
@@ -156,8 +159,13 @@ mod tests {
     #[test]
     fn test_input_is_cached() {
         let client = Client::new().unwrap();
-        client.get_input(2023, 6).unwrap();
-        let result = client.get_cached_input(2023, 6).unwrap();
+        let solution = SolutionDay {
+            year: 2023,
+            day: 6,
+            part: 1,
+        };
+        client.get_input(&solution).unwrap();
+        let result = client.get_cached_input(&solution).unwrap();
         assert_eq!(
             result,
             "Time:        44     80     65     72\nDistance:   208   1581   1050   1102\n"
@@ -166,11 +174,14 @@ mod tests {
 
     #[test]
     fn test_caching() {
-        let year = 1000;
-        let day = 100;
+        let solution = SolutionDay {
+            year: 1000,
+            day: 100,
+            part: 1,
+        };
         let client = Client::new().unwrap();
-        client.cache_input(year, day, "test").unwrap();
-        let res = client.get_cached_input(year, day).unwrap();
+        client.cache_input(&solution, "test").unwrap();
+        let res = client.get_cached_input(&solution).unwrap();
         assert_eq!(res, "test");
     }
 }

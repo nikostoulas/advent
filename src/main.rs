@@ -2,11 +2,11 @@ mod auto_import;
 use std::time::Instant;
 use time::Month;
 
-use aoc_client::{Client, SolutionDay};
+use aoc_client::{Client, SolutionPart};
 
 fn main() {
     let solution_day = get_solution_day();
-    let SolutionDay { year, day, part } = solution_day;
+    let SolutionPart { year, day, part } = solution_day;
     let client = Client::new().unwrap();
     println!("Getting input for year {} day {}...", year, day);
     let input = client.get_input(&solution_day).unwrap();
@@ -35,7 +35,7 @@ fn main() {
     }
 }
 
-fn get_solution_day() -> SolutionDay {
+fn get_solution_day() -> SolutionPart {
     let args = std::env::args().collect::<Vec<String>>();
     let current_time = time::OffsetDateTime::now_utc();
     // get year
@@ -67,7 +67,7 @@ fn get_solution_day() -> SolutionDay {
     } else {
         prompt_for_input("Enter part(default 1):", 1)
     };
-    SolutionDay::create(year, day, part)
+    SolutionPart::create(year, day, part)
 }
 
 fn prompt_for_input<T: std::str::FromStr>(prompt: &str, default: T) -> T {

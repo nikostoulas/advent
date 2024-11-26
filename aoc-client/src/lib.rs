@@ -2,4 +2,4 @@
 mod client;
 mod solution;
 pub use client::Client;
-pub use solution::SolutionDay;
+pub use solution::SolutionPart;

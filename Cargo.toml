@@ -1,5 +1,5 @@
 [workspace]
-members = ["aoc-client"]
+members = ["aoc-client", "parser"]
 [package]
 name = "advent"
 version = "0.1.0"
@@ -10,6 +10,7 @@ authors = ["Nikos Kostoulas"]
 time = "0.3.30"
 aoc-client = { path = "aoc-client" }
 regex = "1.11.1"
+parser = { path = "parser" }
 
 [build-dependencies]
 aoc-auto = "0.1.0"

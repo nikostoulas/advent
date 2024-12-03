@@ -1,5 +1,4 @@
-use regex::Regex;
-
+use parser::Parser;
 pub fn part1(input: String) -> String {
     let nums = parse_input(&input);
     nums.iter().map(|[a, b]| a * b).sum::<i32>().to_string()
@@ -11,26 +10,21 @@ pub fn part2(input: String) -> String {
 }
 
 fn parse_input(input: &str) -> Vec<[i32; 2]> {
-    let re = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
+    let mut parser = Parser::new(input);
     let mut results = vec![];
-    for (_, [num1, num2]) in re.captures_iter(input).map(|c| c.extract()) {
-        results.push([num1.parse::<i32>().unwrap(), num2.parse::<i32>().unwrap()]);
+
+    while parser.advance_to("mul(") {
+        let num1 = parser.match_number_up_to(',');
+        let num2 = parser.match_number_up_to(')');
+        results.push([num1.unwrap_or(0), num2.unwrap_or(0)]);
     }
     results
 }
 
-fn parse_input_2(mut input: &str) -> Vec<[i32; 2]> {
-    let mut result = vec![];
-    while !input.is_empty() {
-        let (before_dont, after_dont) = split(input, "don't()");
-        result.append(&mut parse_input(before_dont));
-        input = split(after_dont, "do()").1;
-    }
-    result
-}
-
-fn split<'a>(input: &'a str, up_to: &'a str) -> (&'a str, &'a str) {
-    input.split_once(up_to).unwrap_or((input, ""))
+fn parse_input_2(input: &str) -> Vec<[i32; 2]> {
+    let mut parser = Parser::new(input);
+    let input = parser.delete_between("don't()", "do()");
+    parse_input(&input)
 }
 
 #[cfg(test)]

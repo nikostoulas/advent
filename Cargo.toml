@@ -9,6 +9,7 @@ authors = ["Nikos Kostoulas"]
 [dependencies]
 time = "0.3.30"
 aoc-client = { path = "aoc-client" }
+regex = "1.11.1"
 
 [build-dependencies]
 aoc-auto = "0.1.0"

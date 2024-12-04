@@ -21,7 +21,9 @@ impl Parser {
 
     pub fn pop(&mut self) -> Option<&char> {
         let value = self.characters.get(self.cursor);
-        self.cursor += 1;
+        if !self.is_done() {
+            self.cursor += 1;
+        }
         value
     }
 
@@ -118,6 +120,10 @@ mod tests {
         let mut parser = Parser::new("hello");
         assert_eq!(parser.pop(), Some(&'h'));
         assert_eq!(parser.cursor(), 1);
+
+        parser.advance(4);
+        assert_eq!(parser.pop(), None);
+        assert_eq!(parser.cursor(), 5);
     }
 
     #[test]

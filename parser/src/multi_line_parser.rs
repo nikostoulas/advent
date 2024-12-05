@@ -1,5 +1,6 @@
 #[derive(Debug)]
 pub struct MultiLineParser {
+    lines: Vec<String>,
     characters: Vec<Vec<char>>,
     line: usize,
     cursor: usize,
@@ -24,15 +25,28 @@ impl Direction {
 
 impl MultiLineParser {
     pub fn new(str: &str) -> Self {
+        let lines: Vec<String> = str
+            .split('\n')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .collect();
+
         MultiLineParser {
-            characters: str
-                .split('\n')
-                .map(|s| s.chars().collect::<Vec<char>>())
-                .filter(|s| !s.is_empty())
+            characters: lines
+                .iter()
+                .map(|line| line.chars().collect::<Vec<char>>())
                 .collect(),
+            lines,
             line: 0,
             cursor: 0,
         }
+    }
+
+    pub fn split_to_numbers(&self, delimiter: &str) -> Vec<Vec<i32>> {
+        self.lines
+            .iter()
+            .map(|line| line.split(delimiter).map(|n| n.parse().unwrap()).collect())
+            .collect()
     }
 
     pub fn peek(&self) -> Option<&char> {

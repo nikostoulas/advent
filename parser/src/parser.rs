@@ -1,6 +1,18 @@
+use std::fmt::Display;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Parser {
     characters: Vec<char>,
     cursor: usize,
+}
+
+impl Display for Parser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for char in &self.characters {
+            write!(f, "{}", char)?;
+        }
+        Ok(())
+    }
 }
 
 impl Parser {
@@ -8,6 +20,18 @@ impl Parser {
         Self {
             characters: str.chars().collect(),
             cursor: 0,
+        }
+    }
+
+    pub fn go_to(&mut self, to: usize) {
+        self.cursor = to;
+    }
+
+    pub fn fill(&mut self, target: &char, from: usize, to: usize) {
+        let cursor_from = from.min(to);
+        let cursor_to = from.max(to).min(self.len() - 1);
+        for cursor in cursor_from..=cursor_to {
+            self.characters[cursor] = *target;
         }
     }
 
@@ -27,6 +51,14 @@ impl Parser {
         value
     }
 
+    pub fn len(&self) -> usize {
+        self.characters.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn is_done(&self) -> bool {
         self.cursor == self.characters.len()
     }
@@ -39,10 +71,10 @@ impl Parser {
                     .chars()
                     .enumerate()
                     .skip(1)
-                    .all(|(i, t)| self.peek_at(j + i) == Some(&t))
+                    .all(|(i, t)| self.peek_at((j + i) as i32) == Some(&t))
         });
         if position.is_some() {
-            self.cursor += position.unwrap() + target.len();
+            self.cursor += position.unwrap() + target.len() - 1;
             true
         } else {
             self.cursor = self.characters.len();
@@ -50,8 +82,11 @@ impl Parser {
         }
     }
 
-    pub fn peek_at(&self, num: usize) -> Option<&char> {
-        self.characters.get(self.cursor + num)
+    pub fn peek_at(&self, num: i32) -> Option<&char> {
+        if self.cursor as i32 + num < 0 {
+            return None;
+        }
+        self.characters.get((self.cursor as i32 + num) as usize)
     }
 
     pub fn delete_between(&mut self, from: &str, to: &str) -> String {
@@ -60,18 +95,19 @@ impl Parser {
         while !self.is_done() {
             self.advance_to(from);
             result.push_str(
-                self.characters[position..self.cursor - 1]
+                self.characters[position..self.cursor]
                     .iter()
                     .collect::<String>()
                     .as_str(),
             );
             self.advance_to(to);
+            self.advance(1);
             position = self.cursor;
         }
         result
     }
 
-    pub fn match_number(&mut self) -> Option<i32> {
+    pub fn match_number(&mut self) -> Option<i64> {
         let mut number = String::new();
         while let Some(&c) = self.peek() {
             if char::is_digit(c, 10) {
@@ -84,7 +120,7 @@ impl Parser {
         number.parse().ok()
     }
 
-    pub fn match_number_up_to(&mut self, target: char) -> Option<i32> {
+    pub fn match_number_up_to(&mut self, target: char) -> Option<i64> {
         let number = self.match_number();
         if self.peek() == Some(&target) {
             self.cursor += 1;
@@ -93,11 +129,34 @@ impl Parser {
         None
     }
 
-    pub fn advance(&mut self, num: usize) {
+    pub fn split_to_numbers(&self, delimiter: &str) -> Vec<i64> {
+        self.characters
+            .iter()
+            .skip(self.cursor)
+            .collect::<String>()
+            .split(delimiter)
+            .map(|n| n.parse().unwrap())
+            .collect()
+    }
+
+    pub fn advance(&mut self, num: usize) -> usize {
         if self.cursor + num > self.characters.len() {
-            panic!("Cannot advance past the end of the input");
+            let remaining = num - (self.len() - self.cursor);
+            self.cursor = self.characters.len();
+            return remaining;
         }
         self.cursor += num;
+        0
+    }
+
+    pub fn go_back(&mut self, num: usize) -> usize {
+        if self.cursor < num {
+            let remaining = num - self.cursor;
+            self.cursor = 0;
+            return remaining;
+        }
+        self.cursor -= num;
+        0
     }
 
     pub fn reset(&mut self) {
@@ -130,7 +189,7 @@ mod tests {
     fn test_advance_to() {
         let mut parser = Parser::new("hello");
         assert_eq!(parser.advance_to("ll"), true);
-        assert_eq!(parser.cursor(), 4);
+        assert_eq!(parser.cursor(), 3);
         assert_eq!(parser.advance_to("ll"), false);
     }
 

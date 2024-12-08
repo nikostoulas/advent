@@ -18,13 +18,14 @@ type Params<'a> = HashMap<&'a str, String>;
 /// # Example
 ///
 /// ```rust
-/// use aoc_lib::Client;
+/// use aoc_client::Client;
+/// use aoc_client::SolutionPart;
 ///
 /// fn example() {
 ///   let client = Client::new().unwrap();
 ///   
-///   let input = client.get_input(2019, 1).unwrap();
-///   let result = client.submit_solution(2019, 1, 1, "solution").unwrap();
+///   let input = client.get_input(&SolutionPart::create(2019, 1, 1)).unwrap();
+///   let result = client.submit_solution(&SolutionPart::create(2019, 1, 1), "solution").unwrap();
 ///   println!("{}", result);
 /// }
 pub struct Client {

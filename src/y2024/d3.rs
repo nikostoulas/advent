@@ -1,19 +1,20 @@
 use parser::Parser;
 pub fn part1(input: String) -> String {
     let nums = parse_input(&input);
-    nums.iter().map(|[a, b]| a * b).sum::<i32>().to_string()
+    nums.iter().map(|[a, b]| a * b).sum::<i64>().to_string()
 }
 
 pub fn part2(input: String) -> String {
     let nums = parse_input_2(&input);
-    nums.iter().map(|[a, b]| a * b).sum::<i32>().to_string()
+    nums.iter().map(|[a, b]| a * b).sum::<i64>().to_string()
 }
 
-fn parse_input(input: &str) -> Vec<[i32; 2]> {
+fn parse_input(input: &str) -> Vec<[i64; 2]> {
     let mut parser = Parser::new(input);
     let mut results = vec![];
 
     while parser.advance_to("mul(") {
+        parser.advance(1);
         let num1 = parser.match_number_up_to(',');
         let num2 = parser.match_number_up_to(')');
         results.push([num1.unwrap_or(0), num2.unwrap_or(0)]);
@@ -21,7 +22,7 @@ fn parse_input(input: &str) -> Vec<[i32; 2]> {
     results
 }
 
-fn parse_input_2(input: &str) -> Vec<[i32; 2]> {
+fn parse_input_2(input: &str) -> Vec<[i64; 2]> {
     let mut parser = Parser::new(input);
     let input = parser.delete_between("don't()", "do()");
     parse_input(&input)

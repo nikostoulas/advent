@@ -1,9 +1,10 @@
-#[derive(Debug)]
+use crate::Parser;
+use std::fmt::Display;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MultiLineParser {
-    lines: Vec<String>,
-    characters: Vec<Vec<char>>,
+    parsers: Vec<Parser>,
     line: usize,
-    cursor: usize,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -17,98 +18,213 @@ pub enum Direction {
     Up,
     UpRight,
 }
+
 use Direction::{Down, DownLeft, Left, LeftUp, Right, RightDown, Up, UpRight};
 
 impl Direction {
     const VALUES: [Self; 8] = [Right, RightDown, Down, DownLeft, Left, LeftUp, Up, UpRight];
 }
 
+impl Display for MultiLineParser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for parser in &self.parsers {
+            writeln!(f, "{}", parser)?;
+        }
+        Ok(())
+    }
+}
+
 impl MultiLineParser {
     pub fn new(str: &str) -> Self {
-        let lines: Vec<String> = str
+        let parsers = str
             .split('\n')
             .filter(|s| !s.is_empty())
-            .map(|s| s.to_string())
+            .map(Parser::new)
             .collect();
 
-        MultiLineParser {
-            characters: lines
-                .iter()
-                .map(|line| line.chars().collect::<Vec<char>>())
-                .collect(),
-            lines,
-            line: 0,
-            cursor: 0,
-        }
+        MultiLineParser { parsers, line: 0 }
     }
 
-    pub fn split_to_numbers(&self, delimiter: &str) -> Vec<Vec<i32>> {
-        self.lines
+    pub fn match_number(&mut self) -> Vec<Option<i64>> {
+        self.parsers.iter_mut().map(|p| p.match_number()).collect()
+    }
+
+    pub fn match_number_up_to(&mut self, target: char) -> Vec<Option<i64>> {
+        self.parsers
+            .iter_mut()
+            .map(|p| p.match_number_up_to(target))
+            .collect()
+    }
+
+    pub fn advance_all_lines(&mut self, num: usize) {
+        self.parsers.iter_mut().for_each(|p| {
+            p.advance(num);
+        });
+    }
+
+    pub fn reset(&mut self) {
+        self.line = 0;
+        self.parsers.iter_mut().for_each(|p| p.reset());
+    }
+
+    pub fn split_to_numbers(&self, delimiter: &str) -> Vec<Vec<i64>> {
+        self.parsers
             .iter()
-            .map(|line| line.split(delimiter).map(|n| n.parse().unwrap()).collect())
+            .map(|p| p.split_to_numbers(delimiter))
             .collect()
     }
 
     pub fn peek(&self) -> Option<&char> {
-        let line = self.characters.get(self.line);
-        if let Some(line) = line {
-            line.get(self.cursor)
+        let parser = self.parsers.get(self.line);
+        if let Some(parser) = parser {
+            parser.peek()
         } else {
             None
         }
     }
 
     pub fn peek_at(&self, line: i32, cursor: i32) -> Option<&char> {
-        if self.line as i32 + line < 0 || self.cursor as i32 + cursor < 0 {
+        if self.line as i32 + line < 0 {
             return None;
         }
-        let line = self.characters.get((self.line as i32 + line) as usize);
-        if let Some(line) = line {
-            line.get((self.cursor as i32 + cursor) as usize)
+        let parser = self.parsers.get((self.line as i32 + line) as usize);
+        let cur_cursor = self.cursor();
+        if let Some(parser) = parser {
+            parser.peek_at(cur_cursor as i32 + cursor - parser.cursor() as i32)
         } else {
             None
         }
     }
 
-    pub fn advance(&mut self, num: usize) {
-        self.cursor += num;
-        if self.cursor >= self.characters[self.line].len() {
-            let remainder = self.cursor % self.characters[self.line].len();
-            self.line += self.cursor / self.characters[self.line].len();
-            self.cursor = remainder;
+    pub fn advance(&mut self, mut num: usize) {
+        while num > 0 && !self.is_done() {
+            num = self.parsers[self.line].advance(num);
+            if self.parsers[self.line].is_done() {
+                self.line += 1;
+            }
         }
-        if self.line > self.characters.len() {
-            self.line = self.characters.len();
+    }
+
+    pub fn advance_to(&mut self, target: &str) -> bool {
+        while !self.parsers[self.line].advance_to(target) && !self.is_done() {
+            self.line += 1;
         }
-        if self.is_done() {
-            self.cursor = 0;
+
+        self.is_done()
+    }
+
+    pub fn go_to(&mut self, to: (usize, usize)) {
+        self.line = to.0;
+        self.parsers[self.line].go_to(to.1);
+    }
+
+    pub fn fill(&mut self, target: &char, from: (usize, usize), to: (usize, usize)) {
+        let line_from = from.0.min(to.0);
+        let line_to = from.0.max(to.0).min(self.parsers.len() - 1);
+        for line in line_from..=line_to {
+            self.parsers[line].fill(target, from.1, to.1);
+        }
+    }
+
+    pub fn count_chars(&mut self, target: &char) -> usize {
+        self.reset();
+        let mut count = 0;
+        while !self.is_done() {
+            if self.pop() == Some(target) {
+                count += 1;
+            }
+        }
+        count
+    }
+
+    pub fn adnvance_to_with_direction(&mut self, target: &char, direction: &Direction) -> bool {
+        let mut i: i32 = 1;
+        loop {
+            let value = match direction {
+                Right => self.peek_at(0, i),
+                RightDown => self.peek_at(i, i),
+                Down => self.peek_at(i, 0),
+                DownLeft => self.peek_at(i, -i),
+                Left => self.peek_at(0, -i),
+                LeftUp => self.peek_at(-i, -i),
+                Up => self.peek_at(-i, 0),
+                UpRight => self.peek_at(-i, i),
+            };
+            if value == Some(target) || value.is_none() {
+                let i = (i - 1) as usize;
+                let ret = value.is_some();
+                let cursor = self.cursor();
+                match direction {
+                    Right => {
+                        self.parsers[self.line].go_to(cursor + i);
+                    }
+                    RightDown => {
+                        self.line += i;
+                        self.parsers[self.line].go_to(cursor + i);
+                    }
+                    Down => {
+                        self.line += i;
+                        self.parsers[self.line].go_to(cursor);
+                    }
+                    DownLeft => {
+                        self.line += i;
+                        self.parsers[self.line].go_to(cursor - i);
+                    }
+                    Left => {
+                        self.parsers[self.line].go_to(cursor - i);
+                    }
+                    LeftUp => {
+                        self.line -= i;
+                        self.parsers[self.line].go_to(cursor - i);
+                    }
+                    Up => {
+                        self.line -= i;
+                        self.parsers[self.line].go_to(cursor);
+                    }
+                    UpRight => {
+                        self.line -= i;
+                        self.parsers[self.line].go_to(cursor + i);
+                    }
+                };
+
+                return ret;
+            }
+            i += 1;
         }
     }
 
     pub fn pop(&mut self) -> Option<&char> {
-        let line = self.characters.get(self.line);
-        if let Some(line) = line {
-            let value = line.get(self.cursor);
+        let line_change;
+        {
+            let cursor = self.cursor();
+            let len = self.parser()?.len();
             if self.is_done() {
-                return value;
+                return None;
             }
-            if self.cursor == line.len() - 1 {
-                self.cursor = 0;
-                self.line += 1;
-            } else {
-                self.cursor += 1;
-            }
-            return value;
+            line_change = cursor == len - 1;
         }
-        None
+
+        let parser = self.parsers.get_mut(self.line);
+        let value = parser?.pop();
+        if line_change {
+            self.line += 1;
+        }
+        value
     }
 
     pub fn is_done(&self) -> bool {
-        self.line == self.characters.len()
+        self.line == self.parsers.len()
+    }
+
+    fn parser(&self) -> Option<&Parser> {
+        self.parsers.get(self.line)
     }
 
     pub fn cursor(&self) -> usize {
-        self.cursor
+        if (self.is_done()) {
+            return self.parsers[self.parsers.len() - 1].cursor();
+        }
+        self.parsers[self.line].cursor()
     }
 
     pub fn line(&self) -> usize {
@@ -129,11 +245,7 @@ impl MultiLineParser {
                 Up => self.peek_at(-i, 0),
                 UpRight => self.peek_at(-i, i),
             };
-            if let Some(value) = value {
-                str.push(*value);
-            } else {
-                return None;
-            }
+            str.push(*value?);
         }
         Some(str)
     }
@@ -160,9 +272,9 @@ impl MultiLineParser {
         let peeked = self.peek_with_direction(length, &RightDown);
         if let Some(peeked) = peeked {
             if words.iter().any(|w| peeked == **w) {
-                self.cursor += length - 1;
+                self.parsers[self.line].advance(length - 1);
                 let peeked = self.peek_with_direction(length, &DownLeft);
-                self.cursor -= length - 1;
+                self.parsers[self.line].go_back(length - 1);
                 words.iter().any(|w| peeked == Some(w.to_string()))
             } else {
                 false
@@ -190,19 +302,43 @@ mod tests {
 
     #[test]
     fn test_peek_at() {
-        let parser = MultiLineParser::new("hello\nworld");
-        assert_eq!(parser.peek_at(1, 1), Some(&'o'));
+        let parser = MultiLineParser::new("he\nllo");
+        assert_eq!(parser.peek_at(0, 0), Some(&'h'));
+        assert_eq!(parser.peek_at(0, 1), Some(&'e'));
+        assert_eq!(parser.peek_at(0, 2), None);
+        assert_eq!(parser.peek_at(1, 0), Some(&'l'));
+        assert_eq!(parser.peek_at(1, 1), Some(&'l'));
+        assert_eq!(parser.peek_at(1, 2), Some(&'o'));
+        assert_eq!(parser.peek_at(1, 3), None);
+        assert_eq!(parser.peek_at(2, 0), None);
+    }
+
+    #[test]
+    fn test_peek_at_when_advanced() {
+        let mut parser = MultiLineParser::new("he\nllo");
+        parser.advance(3);
+        assert_eq!(parser.peek_at(0, 0), Some(&'l'));
+        assert_eq!(parser.peek_at(0, -1), Some(&'l'));
+        assert_eq!(parser.peek_at(-1, 0), Some(&'e'));
+        assert_eq!(parser.peek_at(-1, -1), Some(&'h'));
     }
 
     #[test]
     fn test_pop() {
         let mut parser = MultiLineParser::new("he\nllo");
+        assert_eq!(parser.cursor(), 0);
         assert_eq!(parser.pop(), Some(&'h'));
+        assert_eq!(parser.cursor(), 1);
         assert_eq!(parser.pop(), Some(&'e'));
+        assert_eq!(parser.cursor(), 0);
         assert_eq!(parser.pop(), Some(&'l'));
+        assert_eq!(parser.cursor(), 1);
         assert_eq!(parser.pop(), Some(&'l'));
+        assert_eq!(parser.cursor(), 2);
         assert_eq!(parser.pop(), Some(&'o'));
+        assert_eq!(parser.cursor(), 3);
         assert_eq!(parser.pop(), None);
+        assert_eq!(parser.cursor(), 3);
     }
 
     #[test]
@@ -213,21 +349,53 @@ mod tests {
     }
 
     #[test]
+    fn test_advance_to() {
+        let mut parser = MultiLineParser::new("hello\nworld");
+        parser.advance_to("w");
+        assert_eq!(parser.peek(), Some(&'w'));
+    }
+
+    #[test]
     fn test_is_done() {
         let mut parser = MultiLineParser::new("hello\nworld");
         parser.advance(15);
-        println!("{:?}", parser);
         assert_eq!(parser.is_done(), true);
     }
 
     #[test]
     fn test_peek_with_direction() {
-        let parser = MultiLineParser::new("hello\nworld");
+        let mut parser = MultiLineParser::new("hello\nworld");
         assert_eq!(parser.peek_with_direction(2, &Down), Some("hw".to_string()));
+        assert_eq!(
+            parser.peek_with_direction(2, &RightDown),
+            Some("ho".to_string())
+        );
         assert_eq!(parser.peek_with_direction(2, &Up), None);
         assert_eq!(
             parser.peek_with_direction(5, &Right),
             Some("hello".to_string())
+        );
+        parser.advance(4);
+        assert_eq!(
+            parser.peek_with_direction(2, &DownLeft),
+            Some("ol".to_string())
+        );
+        assert_eq!(parser.peek_with_direction(2, &Left), Some("ol".to_string()));
+        parser.line = 1;
+        assert_eq!(
+            parser.peek_with_direction(2, &Right),
+            Some("wo".to_string())
+        );
+        parser.advance(4);
+        assert_eq!(
+            parser.peek_with_direction(2, &LeftUp),
+            Some("dl".to_string())
+        );
+        assert_eq!(parser.peek_with_direction(2, &Up), Some("do".to_string()));
+        parser.parsers[1].go_back(1);
+        assert_eq!(
+            parser.peek_with_direction(2, &UpRight),
+            Some("lo".to_string())
         );
     }
 

@@ -4,7 +4,7 @@ use parser::MultiLineParser;
 
 pub fn part1(input: String) -> String {
     let (orders, pages) = parse_input(input);
-    let sum: i32 = pages
+    let sum: i64 = pages
         .iter()
         .filter(|page| is_ordered(page, &orders))
         .map(|page| page[page.len() / 2])
@@ -15,7 +15,7 @@ pub fn part1(input: String) -> String {
 
 pub fn part2(input: String) -> String {
     let (orders, pages) = parse_input(input);
-    let sum: i32 = pages
+    let sum: i64 = pages
         .iter()
         .filter(|page| !is_ordered(page, &orders))
         .map(|page| sort_using_order(page.to_vec(), &orders))
@@ -25,14 +25,14 @@ pub fn part2(input: String) -> String {
     sum.to_string()
 }
 
-fn parse_input(input: String) -> (Vec<Vec<i32>>, Vec<Vec<i32>>) {
+fn parse_input(input: String) -> (Vec<Vec<i64>>, Vec<Vec<i64>>) {
     let (orders_str, pages_str) = input.split_once("\n\n").unwrap();
-    let orders: Vec<Vec<i32>> = MultiLineParser::new(orders_str).split_to_numbers("|");
-    let pages: Vec<Vec<i32>> = MultiLineParser::new(pages_str).split_to_numbers(",");
+    let orders: Vec<Vec<i64>> = MultiLineParser::new(orders_str).split_to_numbers("|");
+    let pages: Vec<Vec<i64>> = MultiLineParser::new(pages_str).split_to_numbers(",");
     (orders, pages)
 }
 
-fn is_ordered(page: &[i32], orders: &[Vec<i32>]) -> bool {
+fn is_ordered(page: &[i64], orders: &[Vec<i64>]) -> bool {
     orders.iter().all(|order| {
         let position_a = page.iter().position(|p| p == &order[0]);
         let position_b = page.iter().position(|p| p == &order[1]);
@@ -40,7 +40,7 @@ fn is_ordered(page: &[i32], orders: &[Vec<i32>]) -> bool {
     })
 }
 
-fn sort_using_order(mut page: Vec<i32>, orders: &[Vec<i32>]) -> Vec<i32> {
+fn sort_using_order(mut page: Vec<i64>, orders: &[Vec<i64>]) -> Vec<i64> {
     page.sort_by(|a, b| {
         if orders.iter().any(|order| order == &[*b, *a]) {
             Ordering::Less

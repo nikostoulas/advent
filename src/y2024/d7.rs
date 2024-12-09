@@ -102,10 +102,15 @@ mod tests {
     fn test_part2() {
         let result = part2(INPUT.to_string());
         assert_eq!(result, "11387");
+    }
+
+    #[test]
+    #[ignore]
+    fn test_part2_input() {
         // takes 3s
-        // assert_eq!(
-        //     part2(include_str!("../../.data/y2024/d7.txt").to_string()),
-        //     "637696070419031"
-        // );
+        assert_eq!(
+            part2(include_str!("../../.data/y2024/d7.txt").to_string()),
+            "637696070419031"
+        );
     }
 }

@@ -123,9 +123,14 @@ mod tests {
     fn test_part2() {
         let result = part2(INPUT.to_string());
         assert_eq!(result, "6");
-        // assert_eq!(
-        //     part2(include_str!("../../.data/y2024/d6.txt").to_string()),
-        //     "1309"
-        // );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_part2_input() {
+        assert_eq!(
+            part2(include_str!("../../.data/y2024/d6.txt").to_string()),
+            "1309"
+        );
     }
 }

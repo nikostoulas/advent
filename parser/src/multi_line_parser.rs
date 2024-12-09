@@ -1,3 +1,4 @@
+use crate::map::Point;
 use crate::Parser;
 use std::fmt::Display;
 
@@ -34,6 +35,22 @@ impl Display for MultiLineParser {
     }
 }
 
+pub struct MultiLineParserIterator<'a> {
+    parser: &'a mut MultiLineParser,
+}
+
+impl<'a> Iterator for MultiLineParserIterator<'a> {
+    type Item = (char, Point);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.parser.is_done() {
+            return None;
+        }
+        let point = self.parser.point();
+        Some((*self.parser.pop()?, point))
+    }
+}
+
 impl MultiLineParser {
     pub fn new(str: &str) -> Self {
         let parsers = str
@@ -43,6 +60,26 @@ impl MultiLineParser {
             .collect();
 
         MultiLineParser { parsers, line: 0 }
+    }
+
+    pub fn iter(&mut self) -> MultiLineParserIterator {
+        MultiLineParserIterator { parser: self }
+    }
+
+    pub fn len(&self) -> usize {
+        self.parsers.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn point(&self) -> Point {
+        (self.line(), self.cursor())
+    }
+
+    pub fn cursor_len(&self) -> usize {
+        self.parsers[0].len()
     }
 
     pub fn match_number(&mut self) -> Vec<Option<i64>> {
@@ -113,9 +150,24 @@ impl MultiLineParser {
         self.is_done()
     }
 
-    pub fn go_to(&mut self, to: (usize, usize)) {
+    pub fn go_to(&mut self, to: (usize, usize)) -> &mut Self {
         self.line = to.0;
+        if self.line >= self.parsers.len() {
+            self.line = self.parsers.len();
+            return self;
+        }
         self.parsers[self.line].go_to(to.1);
+        self
+    }
+
+    pub fn go_to_symmetrically(&mut self, mut to: (i32, i32)) -> &mut Self {
+        to.0 %= self.parsers.len() as i32;
+        if to.0 < 0 {
+            to.0 += self.parsers.len() as i32;
+        }
+        self.line = to.0 as usize;
+        self.parsers[self.line].go_to_symmetrically(to.1);
+        self
     }
 
     pub fn fill(&mut self, target: &char, from: (usize, usize), to: (usize, usize)) {
@@ -124,6 +176,10 @@ impl MultiLineParser {
         for line in line_from..=line_to {
             self.parsers[line].fill(target, from.1, to.1);
         }
+    }
+
+    pub fn set(&mut self, target: &char) {
+        self.parsers.get_mut(self.line).map(|p| p.set(target));
     }
 
     pub fn count_chars(&mut self, target: &char) -> usize {
@@ -221,7 +277,7 @@ impl MultiLineParser {
     }
 
     pub fn cursor(&self) -> usize {
-        if (self.is_done()) {
+        if self.is_done() {
             return self.parsers[self.parsers.len() - 1].cursor();
         }
         self.parsers[self.line].cursor()
@@ -411,5 +467,18 @@ mod tests {
         let mut parser = MultiLineParser::new("hello\nworld");
         assert_eq!(parser.diagonal_x_exists(vec!["ho", "ew"]), true);
         assert_eq!(parser.diagonal_x_exists(vec!["ho", "wo"]), false);
+    }
+
+    #[test]
+    fn test_go_to_symmetrically() {
+        let mut parser = MultiLineParser::new("hello\nworld\n12345");
+        parser.go_to_symmetrically((-1, -1));
+        assert_eq!(parser.peek(), Some(&'5'));
+        parser.go_to_symmetrically((0, 5));
+        assert_eq!(parser.peek(), Some(&'h'));
+        parser.go_to_symmetrically((3, 5));
+        assert_eq!(parser.peek(), Some(&'h'));
+        parser.go_to_symmetrically((-2, -2));
+        assert_eq!(parser.peek(), Some(&'l'));
     }
 }

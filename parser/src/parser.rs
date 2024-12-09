@@ -18,13 +18,23 @@ impl Display for Parser {
 impl Parser {
     pub fn new(str: &str) -> Self {
         Self {
-            characters: str.chars().collect(),
+            characters: str.trim().chars().collect(),
             cursor: 0,
         }
     }
 
-    pub fn go_to(&mut self, to: usize) {
+    pub fn go_to(&mut self, to: usize) -> &mut Self {
         self.cursor = to;
+        self
+    }
+
+    pub fn go_to_symmetrically(&mut self, mut to: i32) -> &mut Self {
+        to %= self.len() as i32;
+        if to < 0 {
+            to += self.len() as i32;
+        }
+        self.cursor = to as usize;
+        self
     }
 
     pub fn fill(&mut self, target: &char, from: usize, to: usize) {
@@ -41,6 +51,12 @@ impl Parser {
 
     pub fn peek(&self) -> Option<&char> {
         self.characters.get(self.cursor)
+    }
+
+    pub fn set(&mut self, target: &char) {
+        self.characters
+            .get_mut(self.cursor)
+            .map(|ref mut c| (**c) = *target);
     }
 
     pub fn pop(&mut self) -> Option<&char> {
@@ -140,6 +156,7 @@ impl Parser {
     }
 
     pub fn advance(&mut self, num: usize) -> usize {
+        println!("advancing by {}", num);
         if self.cursor + num > self.characters.len() {
             let remaining = num - (self.len() - self.cursor);
             self.cursor = self.characters.len();

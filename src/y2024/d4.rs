@@ -45,6 +45,17 @@ MXMXAXMASX
     fn test_part1() {
         let result = part1(INPUT.to_string());
         assert_eq!(result, "18");
+    }
+
+    #[test]
+    fn test_part2() {
+        let result = part2(INPUT.to_string());
+        assert_eq!(result, "9");
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part1_input() {
         assert_eq!(
             part1(include_str!("../../.data/y2024/d4.txt").to_string()),
             "2401"
@@ -52,9 +63,8 @@ MXMXAXMASX
     }
 
     #[test]
-    fn test_part2() {
-        let result = part2(INPUT.to_string());
-        assert_eq!(result, "9");
+    #[cfg(feature = "test_input")]
+    fn test_part2_input() {
         assert_eq!(
             part2(include_str!("../../.data/y2024/d4.txt").to_string()),
             "1822"

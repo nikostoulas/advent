@@ -97,6 +97,17 @@ mod tests {
     fn test_part1() {
         let result = part1(INPUT.to_string());
         assert_eq!(result, "14");
+    }
+
+    #[test]
+    fn test_part2() {
+        let result = part2(INPUT.to_string());
+        assert_eq!(result, "34");
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part1_input() {
         assert_eq!(
             part1(include_str!("../../.data/y2024/d8.txt").to_string()),
             "220"
@@ -104,9 +115,8 @@ mod tests {
     }
 
     #[test]
-    fn test_part2() {
-        let result = part2(INPUT.to_string());
-        assert_eq!(result, "34");
+    #[cfg(feature = "test_input")]
+    fn test_part2_input() {
         assert_eq!(
             part2(include_str!("../../.data/y2024/d8.txt").to_string()),
             "813"

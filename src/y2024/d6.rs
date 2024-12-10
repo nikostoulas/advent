@@ -103,10 +103,6 @@ mod tests {
     fn test_part1() {
         let result = part1(INPUT.to_string());
         assert_eq!(result, "41");
-        assert_eq!(
-            part1(include_str!("../../.data/y2024/d6.txt").to_string()),
-            "4515"
-        );
     }
 
     #[test]
@@ -116,7 +112,16 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+    #[cfg(feature = "test_input")]
+    fn test_part1_input() {
+        assert_eq!(
+            part1(include_str!("../../.data/y2024/d6.txt").to_string()),
+            "4515"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
     fn test_part2_input() {
         assert_eq!(
             part2(include_str!("../../.data/y2024/d6.txt").to_string()),

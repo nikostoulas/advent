@@ -73,30 +73,40 @@ fn list_without_element_at(list: &[i32], index: usize) -> Vec<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_example() {
-        let str = "7 6 4 2 1
+    const INPUT: &str = "7 6 4 2 1
 1 2 7 8 9
 9 7 6 2 1
 1 3 2 4 5
 8 6 4 4 1
 1 3 6 7 9";
-        let result = part1(str.to_string());
+
+    #[test]
+    fn test_example() {
+        let result = part1(INPUT.to_string());
         assert_eq!(result, "2");
     }
 
     #[test]
     fn test_example_part2() {
-        let str = "7 6 4 5 3
-7 6 4 2 1
-1 2 7 8 9
-9 7 6 2 1
-1 3 2 4 5
-8 6 4 4 1
-1 3 6 7 9
-";
-        let result = part2(str.to_string());
-        assert_eq!(result, "5");
+        let result = part2(INPUT.to_string());
+        assert_eq!(result, "4");
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part1_input() {
+        assert_eq!(
+            part1(include_str!("../../.data/y2024/d2.txt").to_string()),
+            "326"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part2_input() {
+        assert_eq!(
+            part2(include_str!("../../.data/y2024/d2.txt").to_string()),
+            "381"
+        );
     }
 }

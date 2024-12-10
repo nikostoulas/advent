@@ -156,7 +156,6 @@ impl Parser {
     }
 
     pub fn advance(&mut self, num: usize) -> usize {
-        println!("advancing by {}", num);
         if self.cursor + num > self.characters.len() {
             let remaining = num - (self.len() - self.cursor);
             self.cursor = self.characters.len();

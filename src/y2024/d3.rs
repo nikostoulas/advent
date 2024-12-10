@@ -31,16 +31,12 @@ fn parse_input_2(input: &str) -> Vec<[i64; 2]> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    const INPUT: &str = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
 
     #[test]
     fn test_part1() {
-        let str = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
-        let result = part1(str.to_string());
+        let result = part1(INPUT.to_string());
         assert_eq!(result, "161");
-        assert_eq!(
-            part1(include_str!("../../.data/y2024/d3.txt").to_string()),
-            "184122457"
-        );
     }
 
     #[test]
@@ -48,6 +44,20 @@ mod tests {
         let str = "don't()do()xmul(2,4)&mul[3,7]!^don't()_don't()mul(5,5)+mul(32,64](mul(11,8)undo()do()?mul(8,5))don't()mul(4,2)testd()mul(8,1)don't()mul(4,1)d()mul(8,1)";
         let result = part2(str.to_string());
         assert_eq!(result, "48");
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part1_input() {
+        assert_eq!(
+            part1(include_str!("../../.data/y2024/d3.txt").to_string()),
+            "184122457"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part2_input() {
         assert_eq!(
             part2(include_str!("../../.data/y2024/d3.txt").to_string()),
             "107862689"

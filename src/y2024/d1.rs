@@ -39,17 +39,17 @@ fn get_two_lists_from_input(input: String) -> (Vec<i32>, Vec<i32>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_example() {
-        let str = "3   4
+    const INPUT: &str = "3   4
 4   3
 2   5
 1   3
 3   9
 3   3
 ";
-        let result = part1(str.to_string());
+
+    #[test]
+    fn test_example() {
+        let result = part1(INPUT.to_string());
         assert_eq!(result, "11");
     }
 
@@ -64,5 +64,23 @@ mod tests {
 ";
         let result = part2(str.to_string());
         assert_eq!(result, "31");
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part1_input() {
+        assert_eq!(
+            part1(include_str!("../../.data/y2024/d1.txt").to_string()),
+            "2285373"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "test_input")]
+    fn test_part2_input() {
+        assert_eq!(
+            part2(include_str!("../../.data/y2024/d1.txt").to_string()),
+            "21142653"
+        );
     }
 }

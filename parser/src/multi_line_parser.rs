@@ -1,43 +1,14 @@
-use crate::map::Point;
+use crate::Direction;
 use crate::Parser;
+use crate::Point;
 use std::fmt::Display;
+
+use Direction::{Down, DownLeft, Left, LeftUp, Right, RightDown, Up, UpRight};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MultiLineParser {
     parsers: Vec<Parser>,
     line: usize,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum Direction {
-    Right,
-    RightDown,
-    Down,
-    DownLeft,
-    Left,
-    LeftUp,
-    Up,
-    UpRight,
-}
-
-use Direction::{Down, DownLeft, Left, LeftUp, Right, RightDown, Up, UpRight};
-
-impl Direction {
-    pub const VALUES: [Self; 8] = [Right, RightDown, Down, DownLeft, Left, LeftUp, Up, UpRight];
-    pub const VALUES_4: [Self; 4] = [Right, Down, Left, Up];
-
-    pub fn opposite(&self) -> Self {
-        match self {
-            Right => Left,
-            RightDown => LeftUp,
-            Down => Up,
-            DownLeft => UpRight,
-            Left => Right,
-            LeftUp => RightDown,
-            Up => Down,
-            UpRight => RightDown,
-        }
-    }
 }
 
 impl Display for MultiLineParser {
@@ -374,7 +345,7 @@ impl MultiLineParser {
     pub fn word_count(&self, word: &str) -> Vec<&Direction> {
         let length = word.len();
         let mut result = vec![];
-        for dir in Direction::VALUES.iter() {
+        for dir in Direction::VALUES_8.iter() {
             let peeked = self.peek_with_direction(length, dir);
             if let Some(peeked) = peeked {
                 if peeked == word {

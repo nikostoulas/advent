@@ -6,39 +6,29 @@ use parser::{Direction, MultiLineParser};
 pub fn part1(input: String) -> String {
     let mut parser = parse_input(input);
     parser.advance_to("^");
-    let mut start = (parser.line(), parser.cursor());
+    let mut cur = parser.point();
     let mut direction = Direction::Up;
     while parser.adnvance_to_with_direction(&'#', &direction) {
-        direction = next_direction(direction);
+        direction = direction.next_4();
         let point = (parser.line(), parser.cursor());
-        parser.fill(&'x', start, point);
-        start = point;
+        parser.fill(&'x', cur, point);
+        cur = point;
     }
     let point = (parser.line(), parser.cursor());
-    parser.fill(&'x', start, point);
+    parser.fill(&'x', cur, point);
 
     parser.count_chars(&'x').to_string()
-}
-
-fn next_direction(direction: Direction) -> Direction {
-    match direction {
-        Direction::Right => Direction::Down,
-        Direction::Down => Direction::Left,
-        Direction::Left => Direction::Up,
-        Direction::Up => Direction::Right,
-        _ => panic!("wrong direction"),
-    }
 }
 
 pub fn part2(input: String) -> String {
     let mut parser = parse_input(input);
     parser.advance_to("^");
-    let start = (parser.line(), parser.cursor());
+    let start = parser.point();
     let mut direction = Direction::Up;
     let mut previous_point = start;
     let mut paths = vec![];
     while parser.adnvance_to_with_direction(&'#', &direction) {
-        direction = next_direction(direction);
+        direction = direction.next_4();
         let point = (parser.line(), parser.cursor());
         paths.push((previous_point, point));
         parser.fill(&'x', previous_point, point);
@@ -59,8 +49,8 @@ pub fn part2(input: String) -> String {
                     continue;
                 }
                 let mut new_parser = parser.clone();
+                new_parser.go_to((line, cursor)).set(&'#');
                 new_parser.go_to(start);
-                new_parser.fill(&'#', (line, cursor), (line, cursor));
                 if does_obstacle_cause_cycle(&mut new_parser) {
                     points.insert((line, cursor));
                 }
@@ -72,11 +62,11 @@ pub fn part2(input: String) -> String {
 }
 
 fn does_obstacle_cause_cycle(parser: &mut MultiLineParser) -> bool {
-    let mut previous_point = (parser.line(), parser.cursor());
+    let mut previous_point = parser.point();
     let mut direction = Direction::Up;
     let mut points: HashMap<(usize, usize), usize> = HashMap::new();
     while parser.adnvance_to_with_direction(&'#', &direction) {
-        direction = next_direction(direction);
+        direction = direction.next_4();
         let point = (parser.line(), parser.cursor());
         if parser.peek() == Some(&'z') {
             points.entry(point).and_modify(|e| *e += 1).or_insert(1);

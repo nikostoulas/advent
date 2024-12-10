@@ -1,4 +1,5 @@
 //! Auto-generated file by build script, do not edit!
+pub mod d10;
 pub mod d4;
 pub mod d1;
 pub mod d5;
@@ -11,6 +12,13 @@ pub mod d9;
 /// Selects the function for the given day and part
 pub fn select_function(day: u32, part: u32) -> Result<fn(String) -> String, String> {
     match day {
+        10 => {
+            match part {
+                1 => Ok(d10::part1),
+                2 => Ok(d10::part2),
+                _ => Err("Invalid part!".into()),
+            }
+        }
         4 => {
             match part {
                 1 => Ok(d4::part1),

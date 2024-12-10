@@ -23,7 +23,21 @@ pub enum Direction {
 use Direction::{Down, DownLeft, Left, LeftUp, Right, RightDown, Up, UpRight};
 
 impl Direction {
-    const VALUES: [Self; 8] = [Right, RightDown, Down, DownLeft, Left, LeftUp, Up, UpRight];
+    pub const VALUES: [Self; 8] = [Right, RightDown, Down, DownLeft, Left, LeftUp, Up, UpRight];
+    pub const VALUES_4: [Self; 4] = [Right, Down, Left, Up];
+
+    pub fn opposite(&self) -> Self {
+        match self {
+            Right => Left,
+            RightDown => LeftUp,
+            Down => Up,
+            DownLeft => UpRight,
+            Left => Right,
+            LeftUp => RightDown,
+            Up => Down,
+            UpRight => RightDown,
+        }
+    }
 }
 
 impl Display for MultiLineParser {
@@ -304,6 +318,57 @@ impl MultiLineParser {
             str.push(*value?);
         }
         Some(str)
+    }
+
+    pub fn peek_next_with_direction(&self, direction: &Direction) -> Option<&char> {
+        let i = 1;
+        let value = match direction {
+            Right => self.peek_at(0, i),
+            RightDown => self.peek_at(i, i),
+            Down => self.peek_at(i, 0),
+            DownLeft => self.peek_at(i, -i),
+            Left => self.peek_at(0, -i),
+            LeftUp => self.peek_at(-i, -i),
+            Up => self.peek_at(-i, 0),
+            UpRight => self.peek_at(-i, i),
+        };
+        value
+    }
+
+    pub fn advance_with_direction(&mut self, num: usize, direction: &Direction) {
+        let cursor = self.cursor();
+        match direction {
+            Right => {
+                self.parsers[self.line].go_to(cursor + num);
+            }
+            RightDown => {
+                self.line += num;
+                self.parsers[self.line].go_to(cursor + num);
+            }
+            Down => {
+                self.line += num;
+                self.parsers[self.line].go_to(cursor);
+            }
+            DownLeft => {
+                self.line += num;
+                self.parsers[self.line].go_to(cursor - num);
+            }
+            Left => {
+                self.parsers[self.line].go_to(cursor - num);
+            }
+            LeftUp => {
+                self.line -= num;
+                self.parsers[self.line].go_to(cursor - num);
+            }
+            Up => {
+                self.line -= num;
+                self.parsers[self.line].go_to(cursor);
+            }
+            UpRight => {
+                self.line -= num;
+                self.parsers[self.line].go_to(cursor + num);
+            }
+        };
     }
 
     pub fn word_count(&self, word: &str) -> Vec<&Direction> {

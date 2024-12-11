@@ -11,6 +11,7 @@ time = "0.3.30"
 aoc-client = { path = "aoc-client" }
 regex = "1.11.1"
 parser = { path = "parser" }
+cached = "0.54.0"
 
 [build-dependencies]
 aoc-auto = "0.1.0"

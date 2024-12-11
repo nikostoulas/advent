@@ -1,5 +1,6 @@
 //! Auto-generated file by build script, do not edit!
 pub mod d10;
+pub mod d11;
 pub mod d4;
 pub mod d1;
 pub mod d5;
@@ -16,6 +17,13 @@ pub fn select_function(day: u32, part: u32) -> Result<fn(String) -> String, Stri
             match part {
                 1 => Ok(d10::part1),
                 2 => Ok(d10::part2),
+                _ => Err("Invalid part!".into()),
+            }
+        }
+        11 => {
+            match part {
+                1 => Ok(d11::part1),
+                2 => Ok(d11::part2),
                 _ => Err("Invalid part!".into()),
             }
         }
